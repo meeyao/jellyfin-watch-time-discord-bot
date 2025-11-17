@@ -1,0 +1,5 @@
+__pycache__
+*.pyc
+.venv
+watchtimebot.yaml
+watchtimebot.yaml.example

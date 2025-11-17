@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title or "WatchtimeBot Admin" }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        --gruvbox-bg: #1d2021;
+        --gruvbox-bg-soft: #282828;
+        --gruvbox-fg: #ebdbb2;
+        --gruvbox-accent: #d79921;
+        --gruvbox-accent-2: #458588;
+        --gruvbox-danger: #cc241d;
+      }
+      body {
+        background-color: var(--gruvbox-bg);
+        color: var(--gruvbox-fg);
+      }
+      .card {
+        background-color: var(--gruvbox-bg-soft);
+      }
+      .btn-primary {
+        background-color: var(--gruvbox-accent);
+        color: var(--gruvbox-bg);
+      }
+      .btn-secondary {
+        background-color: var(--gruvbox-accent-2);
+        color: var(--gruvbox-fg);
+      }
+      .btn-danger {
+        background-color: var(--gruvbox-danger);
+        color: var(--gruvbox-fg);
+      }
+      .btn-primary:hover {
+        background-color: #fabd2f;
+      }
+      .btn-secondary:hover {
+        background-color: #83a598;
+      }
+      .btn-danger:hover {
+        background-color: #fb4934;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th {
+        text-align: left;
+        font-weight: 500;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        color: #d5c4a1;
+      }
+      td,
+      th {
+        padding: 0.75rem;
+      }
+      tr:nth-child(even) {
+        background-color: rgba(0, 0, 0, 0.15);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    {% set setup_view = setup_mode or False %}
+    <header class="px-6 py-4 border-b border-[#3c3836] flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div>
+        <p class="text-sm uppercase tracking-wide text-[#a89984]">WatchtimeBot</p>
+        <h1 class="text-2xl font-semibold">{{ header or "Admin" }}</h1>
+      </div>
+      <div class="flex gap-3">
+        {% if setup_view %}
+          <a href="/setup" class="px-4 py-2 rounded btn-primary text-sm font-semibold">Setup Wizard</a>
+        {% else %}
+          <a href="/" class="px-4 py-2 rounded btn-secondary text-sm font-semibold">Dashboard</a>
+          <a href="/links/new" class="px-4 py-2 rounded btn-primary text-sm font-semibold">Add Link</a>
+          <a href="/setup" class="px-4 py-2 rounded border border-[#3c3836] text-sm font-semibold">Configure</a>
+        {% endif %}
+      </div>
+    </header>
+    <main class="p-6">
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

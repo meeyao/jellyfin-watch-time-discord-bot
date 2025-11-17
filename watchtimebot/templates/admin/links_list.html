@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+  {% if status %}
+    <div class="card rounded px-4 py-3 mb-6 border border-[#3c3836]">
+      <p class="text-sm">
+        {% if status == 'created' %}
+          ✅ Link saved.
+        {% elif status == 'updated' %}
+          ✅ Link updated.
+        {% elif status == 'deleted' %}
+          🗑️ Link removed.
+        {% else %}
+          {{ status }}
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+
+  <section class="card rounded border border-[#3c3836] overflow-x-auto">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-[#3c3836]">
+      <div>
+        <h2 class="text-lg font-semibold">Self-Serve Links</h2>
+        <p class="text-sm text-[#bdae93]">Entries stored in the SQLite link database.</p>
+      </div>
+      <span class="text-sm text-[#bdae93]">{{ links|length }} linked</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Discord ID</th>
+            <th>Display Name</th>
+            <th>Jellyfin User ID</th>
+            <th>Instance</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for link in links %}
+            <tr class="align-top {% if focus and focus == link.discord_id|string %}bg-[#3c3836]{% endif %}">
+              <td class="font-mono text-sm">{{ link.discord_id }}</td>
+              <td>{{ link.display_name or '—' }}</td>
+              <td class="font-mono text-xs break-all">{{ link.jellyfin_user_id }}</td>
+              <td class="font-mono text-xs">{{ link.instance_name or '-' }}</td>
+              <td class="text-right">
+                <a href="/links/{{ link.discord_id }}" class="px-3 py-1 text-xs rounded btn-secondary">Edit</a>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="5" class="text-center text-sm text-[#bdae93] py-6">No linked users yet.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card rounded border border-[#3c3836] mt-8">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-[#3c3836]">
+      <div>
+        <h2 class="text-lg font-semibold">Static Config Mappings</h2>
+        <p class="text-sm text-[#bdae93]">These live in <code>watchtimebot.yaml</code> and are read-only from the UI.</p>
+      </div>
+      <span class="text-sm text-[#bdae93]">{{ static_users|length }} mapped</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Discord ID</th>
+            <th>Display Name</th>
+            <th>Jellyfin User ID</th>
+            <th>Instance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in static_users %}
+            <tr>
+              <td class="font-mono text-sm">{{ user.discord_id }}</td>
+              <td>{{ user.display_name or '—' }}</td>
+              <td class="font-mono text-xs break-all">{{ user.jellyfin_user_id }}</td>
+              <td class="font-mono text-xs">{{ user.instance_name or default_instance }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="4" class="text-center text-sm text-[#bdae93] py-6">No static mappings configured.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

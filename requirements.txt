@@ -1,0 +1,8 @@
+discord.py>=2.4
+PyYAML>=6.0
+aiosqlite>=0.19
+aiohttp>=3.9
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+Jinja2>=3.1

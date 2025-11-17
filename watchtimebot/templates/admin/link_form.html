@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="card rounded border border-[#3c3836] max-w-2xl mx-auto">
+    <div class="px-6 py-4 border-b border-[#3c3836]">
+      <h2 class="text-xl font-semibold">{{ title }}</h2>
+      <p class="text-sm text-[#bdae93]">Manage the Discord ↔ Jellyfin association.</p>
+    </div>
+    <div class="px-6 py-6 space-y-5">
+      <form action="{{ action }}" method="post" class="space-y-5">
+        {% if not link %}
+          <div>
+            <label class="block text-sm uppercase tracking-wide text-[#a89984] mb-1">Discord ID</label>
+            <input
+              type="number"
+              name="discord_id"
+              value="{{ (link.discord_id if link else '') }}"
+              class="w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2 text-[#ebdbb2] focus:border-[#d79921]"
+              required
+            />
+          </div>
+        {% else %}
+          <div>
+            <label class="block text-sm uppercase tracking-wide text-[#a89984] mb-1">Discord ID</label>
+            <input
+              type="text"
+              value="{{ link.discord_id }}"
+              readonly
+              class="w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2 text-[#ebdbb2]"
+            />
+            <p class="text-xs text-[#bdae93] mt-1">Discord ID cannot be changed. Delete and recreate if needed.</p>
+          </div>
+        {% endif %}
+        <div>
+          <label class="block text-sm uppercase tracking-wide text-[#a89984] mb-1">Jellyfin User ID</label>
+          <input
+            type="text"
+            name="jellyfin_user_id"
+            value="{{ (link.jellyfin_user_id if link else '') }}"
+            class="w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2 text-[#ebdbb2] focus:border-[#d79921]"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm uppercase tracking-wide text-[#a89984] mb-1">Jellyfin Instance</label>
+          <select
+            name="instance_name"
+            class="w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2 text-[#ebdbb2] focus:border-[#d79921]"
+          >
+            {% for name in instances %}
+              {% set selected = (link and link.instance_name == name) or (not link and default_instance == name) %}
+              <option value="{{ name }}" {% if selected %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+          </select>
+          <p class="text-xs text-[#bdae93] mt-1">Choose which Jellyfin server this link targets.</p>
+        </div>
+        <div>
+          <label class="block text-sm uppercase tracking-wide text-[#a89984] mb-1">Display Name (optional)</label>
+          <input
+            type="text"
+            name="display_name"
+            value="{{ (link.display_name if link else '') }}"
+            class="w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2 text-[#ebdbb2] focus:border-[#d79921]"
+            placeholder="What should the bot call them?"
+          />
+        </div>
+        {% if link %}
+          <input type="hidden" name="discord_id" value="{{ link.discord_id }}" />
+        {% endif %}
+        <div class="flex justify-end">
+          <button type="submit" class="px-5 py-2 rounded btn-primary font-semibold text-sm">
+            {{ 'Update Link' if link else 'Create Link' }}
+          </button>
+        </div>
+      </form>
+      {% if link %}
+        <form action="/links/{{ link.discord_id }}/delete" method="post" class="text-right">
+          <button type="submit" class="px-4 py-2 rounded btn-danger text-sm" onclick="return confirm('Delete this link?');">
+            Delete Link
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

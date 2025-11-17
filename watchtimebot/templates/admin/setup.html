@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% set title = "WatchtimeBot Setup" %}
+{% set header = "Initial Setup" %}
+{% set setup_mode = True %}
+{% block content %}
+  <div class="max-w-4xl mx-auto">
+    <div class="card rounded border border-[#3c3836]">
+      <div class="px-6 py-4 border-b border-[#3c3836]">
+        <p class="text-sm text-[#bdae93]">Provide your Discord credentials and point the bot at your Jellyfin playback databases.</p>
+        {% if config_error %}
+          <p class="text-xs text-red-300 mt-2">Previous config error: {{ config_error }}</p>
+        {% endif %}
+      </div>
+      <form method="post" class="px-6 py-6 space-y-8">
+        <section class="space-y-4">
+          <h2 class="text-lg font-semibold">Discord Bot</h2>
+          <div class="grid gap-4 md:grid-cols-2">
+            <label class="block text-sm">
+              <span class="uppercase tracking-wide text-[#a89984] text-xs">Bot Token</span>
+              <input type="password" name="discord_token_value" required class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" placeholder="Paste token" />
+              <span class="text-xs text-[#bdae93]">Stored securely in {{ env_path }}.</span>
+            </label>
+            <label class="block text-sm">
+              <span class="uppercase tracking-wide text-[#a89984] text-xs">Token Env Var</span>
+              <input type="text" name="discord_token_env" value="WATCHTIMEBOT_DISCORD_TOKEN" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+            </label>
+          </div>
+          <div class="grid gap-4 md:grid-cols-3">
+            <label class="block text-sm">
+              <span class="uppercase tracking-wide text-[#a89984] text-xs">Prefix</span>
+              <input type="text" name="prefix" value="!" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+            </label>
+            <label class="block text-sm">
+              <span class="uppercase tracking-wide text-[#a89984] text-xs">Activity</span>
+              <input type="text" name="activity" placeholder="tracking Jellyfin" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+            </label>
+            <label class="block text-sm">
+              <span class="uppercase tracking-wide text-[#a89984] text-xs">Timezone</span>
+              <input type="text" name="timezone" value="UTC" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+            </label>
+          </div>
+          <label class="block text-sm">
+            <span class="uppercase tracking-wide text-[#a89984] text-xs">Default Watch Window (days)</span>
+            <input type="number" name="watch_window" value="30" min="1" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+          </label>
+        </section>
+
+        <section class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold">Jellyfin Instances</h2>
+            <button type="button" class="px-4 py-2 rounded btn-secondary text-sm" onclick="addInstanceBlock()">Add Instance</button>
+          </div>
+          <div id="instances" class="space-y-4">
+            <div class="rounded border border-[#3c3836] p-4 instance-block">
+              <p class="text-sm uppercase tracking-wide text-[#a89984] mb-3" data-instance-title>Instance 1</p>
+              <div class="grid gap-4 md:grid-cols-2">
+                <label class="block text-sm">
+                  <span class="text-xs uppercase tracking-wide text-[#a89984]">Instance Name</span>
+                  <input type="text" name="instance_name" required value="primary" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+                </label>
+                <label class="block text-sm">
+                  <span class="text-xs uppercase tracking-wide text-[#a89984]">Playback DB Path</span>
+                  <input type="text" name="instance_playback_db" required placeholder="/data/playback_reporting.db" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+                </label>
+              </div>
+              <div class="grid gap-4 md:grid-cols-2 mt-3">
+                <label class="block text-sm">
+                  <span class="text-xs uppercase tracking-wide text-[#a89984]">Server URL (optional)</span>
+                  <input type="text" name="instance_server_url" placeholder="http://jellyfin:8096" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+                </label>
+                <label class="block text-sm">
+                  <span class="text-xs uppercase tracking-wide text-[#a89984]">API Key (optional)</span>
+                  <input type="password" name="instance_api_key_value" placeholder="Only needed for self-serve link" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+                </label>
+              </div>
+              <label class="block text-sm mt-3">
+                <span class="text-xs uppercase tracking-wide text-[#a89984]">API Key Env Var</span>
+                <input type="text" name="instance_api_key_env" placeholder="WATCHTIMEBOT_JELLYFIN_PRIMARY_API_KEY" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+              </label>
+            </div>
+          </div>
+          <template id="instance-template">
+            <div class="rounded border border-[#3c3836] p-4 instance-block">
+              <p class="text-sm uppercase tracking-wide text-[#a89984] mb-3" data-instance-title>Instance</p>
+              <div class="grid gap-4 md:grid-cols-2">
+                <label class="block text-sm">
+                  <span class="text-xs uppercase tracking-wide text-[#a89984]">Instance Name</span>
+                  <input type="text" name="instance_name" required class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+                </label>
+                <label class="block text-sm">
+                  <span class="text-xs uppercase tracking-wide text-[#a89984]">Playback DB Path</span>
+                  <input type="text" name="instance_playback_db" required class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+                </label>
+              </div>
+              <div class="grid gap-4 md:grid-cols-2 mt-3">
+                <label class="block text-sm">
+                  <span class="text-xs uppercase tracking-wide text-[#a89984]">Server URL (optional)</span>
+                  <input type="text" name="instance_server_url" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+                </label>
+                <label class="block text-sm">
+                  <span class="text-xs uppercase tracking-wide text-[#a89984]">API Key (optional)</span>
+                  <input type="password" name="instance_api_key_value" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+                </label>
+              </div>
+              <label class="block text-sm mt-3">
+                <span class="text-xs uppercase tracking-wide text-[#a89984]">API Key Env Var</span>
+                <input type="text" name="instance_api_key_env" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+              </label>
+            </div>
+          </template>
+        </section>
+
+        <section class="space-y-4">
+          <h2 class="text-lg font-semibold">Link Storage</h2>
+          <label class="block text-sm">
+            <span class="uppercase tracking-wide text-[#a89984] text-xs">SQLite Path</span>
+            <input type="text" name="link_db" value="/state/watchtime_links.db" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+            <span class="text-xs text-[#bdae93]">Make sure this path is writable (mount /state in Docker).</span>
+          </label>
+        </section>
+
+        <div class="flex justify-end">
+          <button type="submit" class="px-5 py-2 rounded btn-primary text-sm font-semibold">Save Configuration</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let instanceCounter = 1;
+    function addInstanceBlock() {
+      const container = document.getElementById("instances");
+      const template = document.getElementById("instance-template");
+      const clone = template.content.cloneNode(true);
+      instanceCounter += 1;
+      const title = clone.querySelector('[data-instance-title]');
+      if (title) {
+        title.textContent = `Instance ${instanceCounter}`;
+      }
+      container.appendChild(clone);
+    }
+    window.addInstanceBlock = addInstanceBlock;
+  </script>
+{% endblock %}

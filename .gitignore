@@ -1,0 +1,31 @@
+# Python / build artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.venv/
+venv/
+env/
+
+# Local configuration + secrets
+.env
+.env.*
+!.env.example
+watchtimebot.yaml
+watchtimebot.yaml.*
+config/
+data/
+*.db
+*.sqlite*
+
+# Backups / archives
+backup/
+bckups/
+
+# OS noise
+.DS_Store
+Thumbs.db

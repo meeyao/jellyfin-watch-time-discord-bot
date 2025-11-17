@@ -1,0 +1,15 @@
+services:
+  watchtimebot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: watchtimebot
+    environment:
+      - WATCHTIMEBOT_CONFIG=/config/watchtimebot.yaml
+    env_file:
+      - .env
+    volumes:
+      - ./config/watchtimebot.yaml:/config/watchtimebot.yaml:ro
+      - ./data:/state
+      - /absolute/path/to/playback_reporting.db:/data/playback_reporting.db:ro
+    restart: unless-stopped
