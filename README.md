@@ -76,32 +76,5 @@ Both commands DM the affected member (best-effort) so they know what changed.
      -v $(pwd)/watchtimebot/data:/state \
      watchtimebot
    ```
-3. A ready-to-edit `docker-compose.example.yaml` lives at the repo root. Copy it into place and set the absolute path to your playback DB:
-   ```bash
-   cp docker-compose.example.yaml docker-compose.yaml
-   # Edit docker-compose.yaml + config/watchtimebot.yaml before running
-   docker compose up -d --build
-   ```
-
-### docker-compose example
-```yaml
-services:
-  watchtimebot:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: watchtimebot
-    environment:
-      - WATCHTIMEBOT_CONFIG=/config/watchtimebot.yaml
-    env_file:
-      - .env
-    volumes:
-      - ./config/watchtimebot.yaml:/config/watchtimebot.yaml:ro
-      - ./data:/state
-      - /absolute/path/to/playback_reporting.db:/data/playback_reporting.db:ro
-    restart: unless-stopped
-```
-
-`env_file` lets you keep Discord/Jellyfin secrets in `.env` (already ignored). The `/state` mount is where the bot writes the dynamic link database so you can persist mappings across restarts.
-
+3. A ready-to-edit `docker-compose.example.yaml` lives at the repo root. Copy it to `docker-compose.yaml`, adjust the bind mounts (config, `/state`, playback DB), and run `docker compose up -d --build`.
 
