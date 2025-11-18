@@ -23,9 +23,12 @@ pip install -r requirements.txt
 ```
 
 ## Configuration
-1. Copy the sample config and populate the values:
+1. Copy one of the sample configs and populate the values:
    ```bash
+   # Local run next to bot.py
    cp watchtimebot.yaml.example watchtimebot.yaml
+   # Docker-friendly template inside config/
+   cp config/watchtimebot.yaml.example config/watchtimebot.yaml
    ```
 2. Set your Discord bot token, preferred prefix, and point `jellyfin.playback_db` at the absolute path of `playback_reporting.db`. Using `~/...` or relative paths is supported.
 3. If you want users to self-link, set `jellyfin.server_url` (e.g. `http://jellyfin:8096` inside Docker) **and** generate a Jellyfin API key for the bot (`jellyfin.api_key`). The bot uses it to list available usernames. Keys are created under Jellyfin **Dashboard → API Keys**.
@@ -65,7 +68,7 @@ Both commands DM the affected member (best-effort) so they know what changed.
 `watchtimebot/jellyfin_reporting.py` centralizes all SQL access. You can safely add new commands by querying additional aggregates (top shows, device breakdowns, etc.) using the same helper.
 
 ## Docker / docker-compose
-1. Copy your config to `watchtimebot/config/watchtimebot.yaml` (ignored by git) and set `jellyfin.playback_db` to the in-container mount, e.g. `/data/playback_reporting.db`.
+1. Copy `config/watchtimebot.yaml.example` to `watchtimebot/config/watchtimebot.yaml` (ignored by git) and set `jellyfin.playback_db` to the in-container mount, e.g. `/data/playback_reporting.db`.
 2. The supplied `Dockerfile` builds a minimal image:
    ```bash
    docker build -t watchtimebot ./watchtimebot
@@ -77,4 +80,3 @@ Both commands DM the affected member (best-effort) so they know what changed.
      watchtimebot
    ```
 3. A ready-to-edit `docker-compose.example.yaml` lives at the repo root. Copy it to `docker-compose.yaml`, adjust the bind mounts (config, `/state`, playback DB), and run `docker compose up -d --build`.
-

@@ -1,0 +1,22 @@
+discord:
+  token: "DISCORD_BOT_TOKEN"
+  prefix: "!"
+  activity: "tracking Jellyfin"
+
+jellyfin:
+  playback_db: "/data/playback_reporting.db"
+  timezone: "UTC"
+  default_watch_window_days: 30
+  server_url: "http://jellyfin:8096"
+  api_key: "YOUR_JELLYFIN_API_KEY"
+
+linking:
+  database: "/state/watchtime_links.db"
+
+users:
+  "123456789012345678":
+    jellyfin_user_id: "79084464344146d0b46f1fa1b6e94358"
+    display_name: "Nick"
+  "234567890123456789":
+    jellyfin_user_id: "32f49d170630441696c0f95519ee9851"
+    display_name: "AnotherUser"

@@ -17,7 +17,9 @@ env/
 !.env.example
 watchtimebot.yaml
 watchtimebot.yaml.*
-config/
+# Allow committed examples but keep real configs out of git
+config/*
+!config/*.example
 data/
 *.db
 *.sqlite*
