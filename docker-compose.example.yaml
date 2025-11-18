@@ -7,9 +7,24 @@ services:
     environment:
       - WATCHTIMEBOT_CONFIG=/config/watchtimebot.yaml
     env_file:
-      - .env
+      - ./config/.env
     volumes:
-      - ./config/watchtimebot.yaml:/config/watchtimebot.yaml:ro
+      - ./config:/config:ro
       - ./data:/state
       - /absolute/path/to/playback_reporting.db:/data/playback_reporting.db:ro
+    restart: unless-stopped
+  watchtimebot-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: watchtimebot_admin
+    command: ["uvicorn", "watchtimebot.admin_app:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      - WATCHTIMEBOT_CONFIG=/config/watchtimebot.yaml
+      - WATCHTIMEBOT_ENV_FILE=/config/.env
+    volumes:
+      - ./config:/config
+      - ./data:/state
+    ports:
+      - "8000:8000"
     restart: unless-stopped

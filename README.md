@@ -48,6 +48,20 @@ python -m watchtimebot.bot
 
 The bot logs in under the configured token. Ensure it has the `MESSAGE CONTENT INTENT` enabled in the Discord developer portal if you plan to keep the default prefix commands.
 
+## Admin web UI
+The bundled FastAPI app walks through configuration and lets you review or adjust Discord↔Jellyfin links.
+
+### Local run
+```bash
+source .venv/bin/activate
+WATCHTIMEBOT_CONFIG=watchtimebot.yaml WATCHTIMEBOT_ENV_FILE=.env \
+  uvicorn watchtimebot.admin_app:app --host 127.0.0.1 --port 8000 --reload
+```
+Open http://127.0.0.1:8000/setup for the first-run wizard. Secrets collected in the wizard are written to `.env`, and future changes sync directly to `watchtimebot.yaml`.
+
+### Docker / Compose
+Expose the admin service by including it in your compose file (see `docker-compose.example.yaml`). It shares the same `/config` and `/state` volumes as the bot and publishes port 8000 so you can reach the UI at http://localhost:8000.
+
 ### Linking workflow for end users
 1. From any server channel they run `!link <username>` (or DM the bot). The bot normalizes the string and looks for a matching Jellyfin account via the API key you provided.
 2. If the name is unique, the link is stored instantly and the user can call `!watchtime`.
@@ -68,7 +82,7 @@ Both commands DM the affected member (best-effort) so they know what changed.
 `watchtimebot/jellyfin_reporting.py` centralizes all SQL access. You can safely add new commands by querying additional aggregates (top shows, device breakdowns, etc.) using the same helper.
 
 ## Docker / docker-compose
-1. Copy `config/watchtimebot.yaml.example` to `watchtimebot/config/watchtimebot.yaml` (ignored by git) and set `jellyfin.playback_db` to the in-container mount, e.g. `/data/playback_reporting.db`.
+1. Copy `config/watchtimebot.yaml.example` to `watchtimebot/config/watchtimebot.yaml` (ignored by git) and set `jellyfin.playback_db` to the in-container mount, e.g. `/data/playback_reporting.db`. Create `config/.env` with your Discord token and Jellyfin API keys so both services can read them.
 2. The supplied `Dockerfile` builds a minimal image:
    ```bash
    docker build -t watchtimebot ./watchtimebot
@@ -79,4 +93,4 @@ Both commands DM the affected member (best-effort) so they know what changed.
      -v $(pwd)/watchtimebot/data:/state \
      watchtimebot
    ```
-3. A ready-to-edit `docker-compose.example.yaml` lives at the repo root. Copy it to `docker-compose.yaml`, adjust the bind mounts (config, `/state`, playback DB), and run `docker compose up -d --build`.
+3. A ready-to-edit `docker-compose.example.yaml` lives at the repo root. Copy it to `docker-compose.yaml`, adjust the bind mounts (config, `/state`, playback DB), and run `docker compose up -d --build`. The example includes both the bot service and the admin UI, and exposes the UI on port 8000 by default.
