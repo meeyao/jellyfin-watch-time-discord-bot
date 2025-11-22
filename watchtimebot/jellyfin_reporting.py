@@ -14,6 +14,7 @@ DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 @dataclass
 class PlaybackEntry:
+    item_id: Optional[str]
     item_name: str
     item_type: Optional[str]
     started_at: datetime
@@ -59,7 +60,7 @@ class PlaybackReportingStore:
     async def get_last_play(self, user_id: str) -> Optional[PlaybackEntry]:
         conn = await self._ensure_conn()
         query = (
-            "SELECT ItemName, ItemType, DateCreated, PlayDuration, ClientName, DeviceName "
+            "SELECT ItemId, ItemName, ItemType, DateCreated, PlayDuration, ClientName, DeviceName "
             "FROM PlaybackActivity WHERE UserId = ? ORDER BY DateCreated DESC LIMIT 1"
         )
         async with conn.execute(query, (user_id,)) as cursor:
@@ -71,7 +72,7 @@ class PlaybackReportingStore:
     async def get_recent_plays(self, user_id: str, limit: int = 5) -> List[PlaybackEntry]:
         conn = await self._ensure_conn()
         query = (
-            "SELECT ItemName, ItemType, DateCreated, PlayDuration, ClientName, DeviceName "
+            "SELECT ItemId, ItemName, ItemType, DateCreated, PlayDuration, ClientName, DeviceName "
             "FROM PlaybackActivity WHERE UserId = ? ORDER BY DateCreated DESC LIMIT ?"
         )
         async with conn.execute(query, (user_id, limit)) as cursor:
@@ -88,7 +89,14 @@ class PlaybackReportingStore:
 def _row_to_entry(row: aiosqlite.Row) -> PlaybackEntry:
     raw_date = row["DateCreated"]
     started_at = _parse_timestamp(raw_date)
+    item_id = None
+    try:
+        if "ItemId" in row.keys():
+            item_id = row["ItemId"]
+    except Exception:
+        item_id = None
     return PlaybackEntry(
+        item_id=item_id,
         item_name=row["ItemName"],
         item_type=row["ItemType"],
         started_at=started_at,

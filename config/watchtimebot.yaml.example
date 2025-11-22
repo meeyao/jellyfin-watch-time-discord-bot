@@ -7,7 +7,8 @@ jellyfin:
   playback_db: "/data/playback_reporting.db"
   timezone: "UTC"
   default_watch_window_days: 30
-  server_url: "http://jellyfin:8096"
+  # Use an HTTPS URL reachable by Discord if you want posters in embeds.
+  server_url: "https://your.public.jellyfin.host"
   api_key: "YOUR_JELLYFIN_API_KEY"
 
 linking:

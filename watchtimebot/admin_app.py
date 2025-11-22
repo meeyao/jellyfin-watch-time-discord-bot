@@ -20,6 +20,31 @@ DEFAULT_ENV_PATH = ".env"
 templates = Jinja2Templates(directory=str(Path(__file__).with_name("templates") / "admin"))
 
 
+def _preset_from_config(config: Optional[AppConfig]) -> Dict[str, object]:
+    if not config:
+        return {}
+    instances = []
+    for instance in config.jellyfin.instances:
+        instances.append(
+            {
+                "name": instance.name,
+                "playback_db": instance.playback_db,
+                "server_url": instance.server_url,
+                # Legacy configs store only the resolved api_key; api_key_env may not exist
+                "api_key_env": getattr(instance, "api_key_env", None),
+            }
+        )
+    return {
+        "discord_token_env": config.discord.token_env,
+        "prefix": config.discord.prefix,
+        "activity": config.discord.activity,
+        "timezone": config.jellyfin.timezone,
+        "watch_window": config.jellyfin.default_watch_window_days,
+        "link_db": config.linking.database,
+        "instances": instances,
+    }
+
+
 class AdminState:
     def __init__(self, config_path: Path):
         self.config_path = config_path
@@ -79,11 +104,11 @@ def create_app(config_path: Optional[str] = None) -> FastAPI:
     app.state.admin_state = state
 
     @app.on_event("startup")
-async def startup() -> None:  # pragma: no cover
+    async def startup() -> None:  # pragma: no cover
         await state.refresh_link_store()
 
     @app.on_event("shutdown")
-async def shutdown() -> None:  # pragma: no cover
+    async def shutdown() -> None:  # pragma: no cover
         if state.link_store:
             await state.link_store.close()
 
@@ -201,14 +226,13 @@ async def shutdown() -> None:  # pragma: no cover
 
     @app.get("/setup", response_class=HTMLResponse)
     async def setup_page(request: Request, state: AdminState = Depends(get_state)) -> HTMLResponse:
-        if state.is_configured():
-            return RedirectResponse("/", status_code=302)
         return templates.TemplateResponse(
             "setup.html",
             {
                 "request": request,
                 "config_error": state.config_error,
                 "env_path": state.env_path,
+                "preset": _preset_from_config(state.config),
             },
         )
 

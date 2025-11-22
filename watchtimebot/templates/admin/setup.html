@@ -22,26 +22,26 @@
             </label>
             <label class="block text-sm">
               <span class="uppercase tracking-wide text-[#a89984] text-xs">Token Env Var</span>
-              <input type="text" name="discord_token_env" value="WATCHTIMEBOT_DISCORD_TOKEN" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+              <input type="text" name="discord_token_env" value="{{ preset.discord_token_env or 'WATCHTIMEBOT_DISCORD_TOKEN' }}" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
             </label>
           </div>
           <div class="grid gap-4 md:grid-cols-3">
             <label class="block text-sm">
               <span class="uppercase tracking-wide text-[#a89984] text-xs">Prefix</span>
-              <input type="text" name="prefix" value="!" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+              <input type="text" name="prefix" value="{{ preset.prefix or '!' }}" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
             </label>
             <label class="block text-sm">
               <span class="uppercase tracking-wide text-[#a89984] text-xs">Activity</span>
-              <input type="text" name="activity" placeholder="tracking Jellyfin" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+              <input type="text" name="activity" value="{{ preset.activity or '' }}" placeholder="tracking Jellyfin" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
             </label>
             <label class="block text-sm">
               <span class="uppercase tracking-wide text-[#a89984] text-xs">Timezone</span>
-              <input type="text" name="timezone" value="UTC" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+              <input type="text" name="timezone" value="{{ preset.timezone or 'UTC' }}" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
             </label>
           </div>
           <label class="block text-sm">
             <span class="uppercase tracking-wide text-[#a89984] text-xs">Default Watch Window (days)</span>
-            <input type="number" name="watch_window" value="30" min="1" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+            <input type="number" name="watch_window" value="{{ preset.watch_window or 30 }}" min="1" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
           </label>
         </section>
 
@@ -51,33 +51,36 @@
             <button type="button" class="px-4 py-2 rounded btn-secondary text-sm" onclick="addInstanceBlock()">Add Instance</button>
           </div>
           <div id="instances" class="space-y-4">
-            <div class="rounded border border-[#3c3836] p-4 instance-block">
-              <p class="text-sm uppercase tracking-wide text-[#a89984] mb-3" data-instance-title>Instance 1</p>
-              <div class="grid gap-4 md:grid-cols-2">
-                <label class="block text-sm">
-                  <span class="text-xs uppercase tracking-wide text-[#a89984]">Instance Name</span>
-                  <input type="text" name="instance_name" required value="primary" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
-                </label>
-                <label class="block text-sm">
-                  <span class="text-xs uppercase tracking-wide text-[#a89984]">Playback DB Path</span>
-                  <input type="text" name="instance_playback_db" required placeholder="/data/playback_reporting.db" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+            {% set rendered_instances = preset.instances if preset.instances else [None] %}
+            {% for instance in rendered_instances %}
+              <div class="rounded border border-[#3c3836] p-4 instance-block">
+                <p class="text-sm uppercase tracking-wide text-[#a89984] mb-3" data-instance-title>Instance {{ loop.index }}</p>
+                <div class="grid gap-4 md:grid-cols-2">
+                  <label class="block text-sm">
+                    <span class="text-xs uppercase tracking-wide text-[#a89984]">Instance Name</span>
+                    <input type="text" name="instance_name" required value="{{ instance.name if instance else 'primary' }}" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+                  </label>
+                  <label class="block text-sm">
+                    <span class="text-xs uppercase tracking-wide text-[#a89984]">Playback DB Path</span>
+                    <input type="text" name="instance_playback_db" required value="{{ instance.playback_db if instance else '' }}" placeholder="/data/playback_reporting.db" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+                  </label>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2 mt-3">
+                  <label class="block text-sm">
+                    <span class="text-xs uppercase tracking-wide text-[#a89984]">Server URL (optional)</span>
+                    <input type="text" name="instance_server_url" value="{{ instance.server_url if instance else '' }}" placeholder="http://jellyfin:8096" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+                  </label>
+                  <label class="block text-sm">
+                    <span class="text-xs uppercase tracking-wide text-[#a89984]">API Key (optional)</span>
+                    <input type="password" name="instance_api_key_value" placeholder="Only needed for self-serve link" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+                  </label>
+                </div>
+                <label class="block text-sm mt-3">
+                  <span class="text-xs uppercase tracking-wide text-[#a89984]">API Key Env Var</span>
+                  <input type="text" name="instance_api_key_env" value="{{ instance.api_key_env if instance else '' }}" placeholder="WATCHTIMEBOT_JELLYFIN_PRIMARY_API_KEY" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
                 </label>
               </div>
-              <div class="grid gap-4 md:grid-cols-2 mt-3">
-                <label class="block text-sm">
-                  <span class="text-xs uppercase tracking-wide text-[#a89984]">Server URL (optional)</span>
-                  <input type="text" name="instance_server_url" placeholder="http://jellyfin:8096" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
-                </label>
-                <label class="block text-sm">
-                  <span class="text-xs uppercase tracking-wide text-[#a89984]">API Key (optional)</span>
-                  <input type="password" name="instance_api_key_value" placeholder="Only needed for self-serve link" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
-                </label>
-              </div>
-              <label class="block text-sm mt-3">
-                <span class="text-xs uppercase tracking-wide text-[#a89984]">API Key Env Var</span>
-                <input type="text" name="instance_api_key_env" placeholder="WATCHTIMEBOT_JELLYFIN_PRIMARY_API_KEY" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
-              </label>
-            </div>
+            {% endfor %}
           </div>
           <template id="instance-template">
             <div class="rounded border border-[#3c3836] p-4 instance-block">
@@ -114,7 +117,7 @@
           <h2 class="text-lg font-semibold">Link Storage</h2>
           <label class="block text-sm">
             <span class="uppercase tracking-wide text-[#a89984] text-xs">SQLite Path</span>
-            <input type="text" name="link_db" value="/state/watchtime_links.db" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
+            <input type="text" name="link_db" value="{{ preset.link_db or '/state/watchtime_links.db' }}" class="mt-1 w-full rounded bg-[#1d2021] border border-[#3c3836] px-3 py-2" />
             <span class="text-xs text-[#bdae93]">Make sure this path is writable (mount /state in Docker).</span>
           </label>
         </section>
@@ -127,7 +130,7 @@
   </div>
 
   <script>
-    let instanceCounter = 1;
+    let instanceCounter = {{ (preset.instances | length) if preset.instances else 1 }};
     function addInstanceBlock() {
       const container = document.getElementById("instances");
       const template = document.getElementById("instance-template");

@@ -18,11 +18,12 @@ from .config_loader import (
     UserMapping,
     load_config,
 )
-from .jellyfin_client import JellyfinClient
+from .jellyfin_client import JellyfinClient, JellyfinItem
 from .jellyfin_reporting import PlaybackEntry, PlaybackReportingStore
 from .link_store import UserLinkStore
 from .linking import LinkingCog
 from .time_format import format_discord_timestamp, format_duration, humanize_datetime
+import urllib.parse
 
 log = logging.getLogger(__name__)
 CONFIG_ENV = "WATCHTIMEBOT_CONFIG"
@@ -195,10 +196,15 @@ class PlaybackCog(commands.Cog):
             return
 
         timestamp = format_discord_timestamp(entry.started_at, self.bot.config.jellyfin.timezone)
-        await ctx.reply(
-            f"Last watched: **{entry.item_name}** ({entry.item_type or 'Unknown'})\n"
-            f"Started at {timestamp} via {entry.client_name or 'unknown client'}"
-        )
+        embed = await self._build_last_watched_embed(entry, runtime.client, timestamp)
+        if embed is None:
+            await ctx.reply(
+                f"Last watched: **{entry.item_name}** ({entry.item_type or 'Unknown'})\n"
+                f"Started at {timestamp} via {entry.client_name or 'unknown client'}"
+            )
+            return
+
+        await ctx.reply(embed=embed)
 
     @commands.command(name="recentplays", aliases=["recent"])
     async def recent_plays(self, ctx: commands.Context, count: Optional[int] = None) -> None:
@@ -235,13 +241,153 @@ class PlaybackCog(commands.Cog):
             mapping.instance_name = self.bot.default_instance_name
         return mapping
 
+    async def _build_last_watched_embed(
+        self,
+        entry: PlaybackEntry,
+        client: Optional[JellyfinClient],
+        timestamp: str,
+    ) -> Optional[discord.Embed]:
+        metadata: Optional[JellyfinItem] = None
+        series_meta: Optional[JellyfinItem] = None
+        if entry.item_id and client and client.can_fetch_items():
+            try:
+                metadata = await client.fetch_item(entry.item_id)
+                if metadata and metadata.item_type and metadata.item_type.lower() == "episode" and metadata.series_id:
+                    try:
+                        series_meta = await client.fetch_item(metadata.series_id, include_parents=False)
+                    except Exception as exc:  # pragma: no cover
+                        log.warning("Failed to fetch series metadata for %s: %s", metadata.series_id, exc)
+            except Exception as exc:  # pragma: no cover - best-effort metadata fetch
+                log.warning("Failed to fetch item metadata for %s: %s", entry.item_id, exc)
+
+        if metadata is None:
+            return None
+
+        link_label, primary_url = _resolve_primary_link(metadata, series_meta)
+        description = metadata.overview or ""
+        if len(description) > 300:
+            description = description[:297].rstrip() + "..."
+
+        title = metadata.name
+        if metadata.item_type and metadata.item_type.lower() == "episode" and metadata.series_name:
+            if metadata.season_number is not None and metadata.episode_number is not None:
+                title = f"{metadata.series_name} — S{metadata.season_number:02d}E{metadata.episode_number:02d} — {metadata.name}"
+            else:
+                title = f"{metadata.series_name} — {metadata.name}"
+
+        embed = discord.Embed(
+            title=title,
+            description=description or None,
+            colour=discord.Color.blue(),
+        )
+        if primary_url:
+            embed.url = primary_url
+
+        type_label = metadata.item_type or entry.item_type or "Unknown"
+        if metadata.item_type and metadata.item_type.lower() == "episode":
+            year = series_meta.premiere_year if series_meta else None
+        else:
+            year = metadata.premiere_year or (series_meta.premiere_year if series_meta else None)
+        if year:
+            type_label = f"{type_label} ({year})"
+        embed.add_field(name="Type", value=type_label, inline=True)
+        embed.add_field(name="Watched", value=timestamp, inline=True)
+
+        client_label = entry.client_name or "unknown client"
+        if entry.device_name:
+            client_label += f" on {entry.device_name}"
+        embed.add_field(name="Client", value=client_label, inline=False)
+
+        if primary_url and link_label:
+            embed.add_field(name=link_label, value=primary_url, inline=False)
+        elif metadata.external_urls:
+            embed.add_field(name="Link", value=metadata.external_urls[0], inline=False)
+
+        image_url = _safe_image_url(metadata.image_url)
+        if image_url:
+            embed.set_image(url=image_url)
+        elif metadata.image_url:
+            log.debug("Discarding invalid image URL for %s: %s", metadata.item_id, metadata.image_url)
+
+        embed.set_footer(text=f"Started via {entry.client_name or 'unknown client'}")
+        return embed
+
 
 def _format_entry(entry: PlaybackEntry, tz: tzinfo) -> str:
-    timestamp = humanize_datetime(entry.started_at, tz)
+    timestamp = format_discord_timestamp(entry.started_at, tz)
     return (
         f"• {entry.item_name} — {format_duration(entry.duration_seconds)} "
         f"on {timestamp} via {entry.client_name or 'unknown'}"
     )
+
+
+def _resolve_primary_link(item: JellyfinItem, series: Optional[JellyfinItem] = None) -> tuple[Optional[str], Optional[str]]:
+    # Prefer series-level IDs for episodes if present
+    chosen = _resolve_link_from_item(series or item)
+    if chosen[1]:
+        return chosen
+    return _resolve_link_from_item(item)
+
+
+def _resolve_link_from_item(item: JellyfinItem) -> tuple[Optional[str], Optional[str]]:
+    # Prefer IMDb, then TMDB, TVDB, AniDB, AniList, MAL, then any external URL
+    if item.imdb_id:
+        return "IMDb", f"https://www.imdb.com/title/{item.imdb_id}"
+    for url in item.external_urls:
+        if "imdb.com/title" in url.lower():
+            return "IMDb", url
+
+    if item.tmdb_id:
+        path = "tv" if (item.item_type or "").lower() in {"series", "show", "tv"} else "movie"
+        return "TMDB", f"https://www.themoviedb.org/{path}/{item.tmdb_id}"
+    for url in item.external_urls:
+        if "themoviedb.org" in url.lower():
+            return "TMDB", url
+
+    if item.tvdb_id:
+        return "TVDB", f"https://thetvdb.com/?id={item.tvdb_id}"
+    for url in item.external_urls:
+        if "thetvdb.com" in url.lower():
+            return "TVDB", url
+
+    if item.anidb_id:
+        return "AniDB", f"https://anidb.net/anime/{item.anidb_id}"
+    for url in item.external_urls:
+        if "anidb.net" in url.lower():
+            return "AniDB", url
+    if item.shoko_id:
+        return "AniDB (Shoko)", f"https://anidb.net/anime/{item.shoko_id}"
+
+    if item.anilist_id:
+        return "AniList", f"https://anilist.co/anime/{item.anilist_id}"
+    for url in item.external_urls:
+        if "anilist.co" in url.lower():
+            return "AniList", url
+
+    if item.mal_id:
+        return "MyAnimeList", f"https://myanimelist.net/anime/{item.mal_id}"
+    for url in item.external_urls:
+        if "myanimelist.net" in url.lower():
+            return "MyAnimeList", url
+
+    if item.external_urls:
+        return "Link", item.external_urls[0]
+    return None, None
+
+
+def _safe_image_url(url: Optional[str]) -> Optional[str]:
+    if not url:
+        return None
+    if " " in url or "\n" in url:
+        return None
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in {"http", "https"}:
+        return None
+    if not parsed.netloc or "." not in parsed.netloc:
+        return None
+    if parsed.scheme != "https":
+        return None
+    return url
 
 
 def _build_config() -> AppConfig:
