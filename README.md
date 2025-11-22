@@ -4,8 +4,8 @@ A lightweight Discord bot that reads Jellyfin's Playback Reporting plugin databa
 
 ## Features
 - `!watchtime [days|all]` – Sum of `PlayDuration` for the mapped Jellyfin user. Defaults to the window configured in `default_watch_window_days`.
-- `!lastwatched` – Shows the latest entry with timestamp, item type, and playback client.
-- `!recentplays [count]` – Lists up to 10 of the most recent plays (default 5).
+- `!lastwatched` – Shows the latest entry with a rich embed (poster when reachable via HTTPS), provider link fallback (IMDb → TMDB → TVDB → AniDB/AniList/MAL), timestamp, and playback client.
+- `!recentplays [count]` – Lists up to 10 of the most recent plays (default 5) using Discord timestamps so each user sees local time.
 - `!link <username>` / `!unlink` – Users can self-serve by telling the bot their Jellyfin username; it fuzzy-matches against your server’s user list and stores the mapping.
 - `!forcelink` / `!forceunlink` – Admin overrides for situations where you need to wire up a user manually.
 
